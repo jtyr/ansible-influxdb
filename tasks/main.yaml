@@ -3,44 +3,45 @@
 - name: Test distribution
   assert:
     that: >
-      ansible_os_family == "RedHat" or
-      ansible_os_family == "Debian"
+      ansible_os_family == "RedHat"
 
-- name: Install influxdb package for RedHat
-  yum:
+- name: Install yumrepo file
+  yum_repository:
+    name: "{{ influxdb_pkg }}"
+    description: InfluxDB Yum repo
+    baseurl: "{{ influxdb_yumrepo_url }}"
+    gpgkey: "{{ influxdb_yumrepo_gpgkey }}"
+    params: "{{ influxdb_yumrepo_params }}"
+  tags:
+    - influxdb_pkg
+
+- name: Install influxdb package
+  package:
     name: influxdb
-  when: ansible_os_family == 'RedHat'
   notify:
     - Restart influxdb service
   tags:
     - influxdb_pkg
-
-- name: Install influxdb package for Debian
-  apt:
-    name: influxdb
-  when: ansible_os_family == 'Debian'
-  notify:
-    - Restart influxdb service
-  tags:
-    - influxdb_pkg
-
-- name: Symlink init.d script
-  file:
-    src: /opt/influxdb/current/scripts/init.sh
-    path: /etc/init.d/influxdb
-    state: link
 
 - name: Create InfluxDB configuration file
   template:
     src: config.toml.j2
-    dest: /opt/influxdb/shared/config.toml
+    dest: "{{ influxdb_config_file }}"
+  register: influxdb_config_result
   notify:
     - Restart influxdb service
   tags:
     - influxdb_config
 
-- name: Make influxdb service running
+- name: Make sure influxdb service is enabled
   service:
-    name: influxdb
-    state: started
+    name: "{{ influxdb_service }}"
     enabled: yes
+
+- name: Make sure influxdb service is running
+  service:
+    name: "{{ influxdb_service }}"
+    state: started
+  register: influxdb_service_started
+  when: >
+      not influxdb_config_result.changed

@@ -2,5 +2,8 @@
 
 - name: Restart influxdb service
   service:
-    name: influxdb
+    name: "{{ influxdb_service }}"
     state: restarted
+  when: >
+    influxdb_service_started is not defined or
+    not influxdb_service_started.changed

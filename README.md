@@ -3,12 +3,6 @@ influxdb
 
 Ansible role which installs and configures InfluxDB.
 
-This role doesn't download the RPM
-package. In order to install it, it needs to be put into a repo (see
-[`yumrepo`](https://github.com/picotrading/ansible-yumrepo) role for RedHat-based
-distros). You can encapsulate this role to manage the installation of the RPM
-package automatically.
-
 The configuraton of the role is done in such way that it should not be necessary
 to change the role for any kind of configuration. All can be done either by
 changing role parameters or by declaring completely new configuration as a
@@ -24,37 +18,42 @@ Examples
 ```
 ---
 
-# Example of how to use the role with default parameters
-- hosts: myhost1
+- name Example of how to use the role with default parameters
+  hosts: myhost1
   roles:
     - influxdb
 
-# Example how to customize some of the role parameters
-- hosts: myhost2
+- name: Example how to customize some of the role parameters
+  hosts: myhost2
+  vars:
+    # Enable Graphite listener
+    influxdb_config_graphite_list__default_enabled: "true"
   roles:
-    - role: influxdb
-      influxdb_graphite_plugin_enabled: 'true'
-      influxdb_graphite_db: grafana
+    - influxdb
 
-# Or it's possible to change the structure of the template completely
-#- hosts: myhost3
-#  roles:
-#    - role: influxdb
-#      # see defaults/main.yaml for example
-#      influxdb_config:
-#        .
-#        ..
-#        ...
-```
-
-This role requires [Config Encoder
-Macros](https://github.com/picotrading/config-encoder-macros) which must be
-placed into the same directory as the playbook:
-
-```
-$ ls -1 *.yaml
-site.yaml
-$ git clone https://github.com/picotrading/config-encoder-macros.git ./templates/encoder
+- name: Example of how to white the config file from scratch
+  hosts: myhost3
+  vars:
+    # Very minimalistic config
+    influxdb_config:
+      meta:
+        dir: /var/lib/influxdb/meta
+      data:
+        dir: /var/lib/influxdb/data
+        wal-dir: /var/lib/influxdb/wal
+      coordinator: {}
+      retention: {}
+      shard-precreation: {}
+      monitor: {}
+      http: {}
+      subscriber: {}
+      graphite: []
+      collectd: []
+      opentsdb: []
+      udp: []
+      continuous_queries: {}
+  roles:
+    - influxdb
 ```
 
 
@@ -64,178 +63,470 @@ Role variables
 List of variables used by the role:
 
 ```
-# Default host name
-influxdb_hostname: "{{ ansible_hostname }}"
+# Yumrepo URL
+influxdb_yumrepo_url: https://repos.influxdata.com/centos/$releasever/$basearch/stable
 
-# Default bind address
-influxdb_bind_address: 0.0.0.0
+# Yumrepo GPG key URL
+influxdb_yumrepo_gpgkey: https://repos.influxdata.com/influxdb.key
 
-# Reporting is disabled by default
-influxdb_reporting_disabled: 'true'
+# Custom yumrepo params to add or override the existing one
+influxdb_yumrepo_params: {}
 
-# Default loging level [fine|debug|info|warn|error]
-influxdb_logging_level: info
+# Package to be installed (version can be specified here)
+influxdb_pkg: influxdb
 
-# Default log file
-influxdb_logging_file: /opt/influxdb/shared/log.txt
+# Location of the influxdb config file
+influxdb_config_file: /etc/influxdb/influxdb.conf
 
-# Default admin port number
-influxdb_admin_port: 8083
+# Name of the InfluxDB service
+influxdb_service: influxdb
 
-# Default API port number
-influxdb_api_port: 8086
 
-# Default API read timeout
-influxdb_api_read_timeout: 5s
+# Default values of options for the meta section
+influxdb_config_meta__default_dir: /var/lib/influxdb/meta
+influxdb_config_meta__default_retention_autocreate: "true"
+influxdb_config_meta__default_logging_enabled: "true"
 
-# Default API configuration block
-influxdb_api:
-  port: "{{ influxdb_api_port }}"
-  read-timeout: "{{ influxdb_api_read_timeout }}"
-#  ssl-port = 8084
-#  ssl-cert = /path/to/cert.pem
+# Default options of the meta section
+influxdb_config_meta__default:
+  dir: "{{ influxdb_config_meta__default_dir }}"
+  retention-autocreate: "{{ influxdb_config_meta__default_retention_autocreate }}"
+  logging-enabled: "{{ influxdb_config_meta__default_logging_enabled }}"
 
-# Graphite input plugin is disabled by default
-influxdb_graphite_plugin_enabled: 'false'
+# Custom options of the meta section
+influxdb_config_meta__custom: {}
 
-# Default Graphite database name
-influxdb_graphite_db: graphite
+# Final meta section
+influxdb_config_meta: "{{
+  influxdb_config_meta__default.update(influxdb_config_meta__custom) }}{{
+  influxdb_config_meta__default }}"
 
-# Default Graphite port number
-influxdb_graphite_port: 2003
 
-# Collectd input plugin is disabled by default
-influxdb_collectd_plugin_enabled: 'false'
+# Default values of options for the data section
+influxdb_config_data__default_dir: /var/lib/influxdb/data
+influxdb_config_data__default_wal_dir: /var/lib/influxdb/wal
+influxdb_config_data__default_wal_fsync_delay: 0s
+influxdb_config_data__default_index_version: inmem
+influxdb_config_data__default_trace_logging_enabled: "false"
+influxdb_config_data__default_query_log_enabled: "false"
+influxdb_config_data__default_cache_max_memory_size: 1048576000
+influxdb_config_data__default_cache_snapshot_memory_size: 26214400
+influxdb_config_data__default_cache_snapshot_write_cold_duration: 10m
+influxdb_config_data__default_compact_full_write_cold_duration: 4h
+influxdb_config_data__default_max_concurrent_compactions: 0
+influxdb_config_data__default_max_series_per_database: 1000000
+influxdb_config_data__default_max_values_per_tag: 100000
 
-# Default Collectd database name
-influxdb_collectd_db: collectd
+# Default options of the data section
+influxdb_config_data__default:
+  dir: "{{ influxdb_config_data__default_dir }}"
+  wal-dir: "{{ influxdb_config_data__default_wal_dir }}"
+  wal-fsync-delay: "{{ influxdb_config_data__default_wal_fsync_delay }}"
+  index-version: "{{ influxdb_config_data__default_index_version }}"
+  trace-logging-enabled: "{{ influxdb_config_data__default_trace_logging_enabled }}"
+  query-log-enabled: "{{ influxdb_config_data__default_query_log_enabled }}"
+  cache-max-memory-size: "{{ influxdb_config_data__default_cache_max_memory_size }}"
+  cache-snapshot-memory-size: "{{ influxdb_config_data__default_cache_snapshot_memory_size }}"
+  cache-snapshot-write-cold-duration: "{{ influxdb_config_data__default_cache_snapshot_write_cold_duration }}"
+  compact-full-write-cold-duration: "{{ influxdb_config_data__default_compact_full_write_cold_duration }}"
+  max-concurrent-compactions: "{{ influxdb_config_data__default_max_concurrent_compactions }}"
+  max-series-per-database: "{{ influxdb_config_data__default_max_series_per_database }}"
+  max-values-per-tag: "{{ influxdb_config_data__default_max_values_per_tag }}"
 
-# Default Collectd port number
-influxdb_collectd_port: 25826
+# Custom options of the data section
+influxdb_config_data__custom: {}
 
-# Default Collectd types DB
-influxdb_collectd_typesdb: /usr/share/collectd/types.db
+# Final data section
+influxdb_config_data: "{{
+  influxdb_config_data__default.update(influxdb_config_data__custom) }}{{
+  influxdb_config_data__default }}"
 
-# UDP input plugin is disabled by default
-influxdb_udp_plugin_enabled: 'false'
 
-# Default UDP database name
-influxdb_udp_db: udp
+# Default values of options for the coordinator section
+influxdb_config_coordinator__default_write_timeout: 10s
+influxdb_config_coordinator__default_max_concurrent_queries: 0
+influxdb_config_coordinator__default_query_timeout: 0s
+influxdb_config_coordinator__default_log_queries_after: 0s
+influxdb_config_coordinator__default_max_select_point: 0
+influxdb_config_coordinator__default_max_select_series: 0
+influxdb_config_coordinator__default_max_select_buckets: 0
 
-# Default UDP port number
-influxdb_udp_port: 4444
+# Default options of the coordinator section
+influxdb_config_coordinator__default:
+  write-timeout: "{{ influxdb_config_coordinator__default_write_timeout }}"
+  max-concurrent-queries: "{{ influxdb_config_coordinator__default_max_concurrent_queries }}"
+  query-timeout: "{{ influxdb_config_coordinator__default_query_timeout }}"
+  log-queries-after: "{{ influxdb_config_coordinator__default_log_queries_after }}"
+  max-select-point: "{{ influxdb_config_coordinator__default_max_select_point }}"
+  max-select-series: "{{ influxdb_config_coordinator__default_max_select_series }}"
+  max-select-buckets: "{{ influxdb_config_coordinator__default_max_select_buckets }}"
 
-# Default udp servers configuration block
-influxdb_udp_servers:
-  - enabled: 'false'
-    port: 5551
-    database: db1
-#  - enabled: 'false'
-#    port: 5552
-#    database: db2
+# Custom options of the coordinator section
+influxdb_config_coordinator__custom: {}
 
-# Default raft port number
-influxdb_raft_port: 8090
+# Final data the coordinator section
+influxdb_config_coordinator: "{{
+  influxdb_config_coordinator__default.update(influxdb_config_coordinator__custom) }}{{
+  influxdb_config_coordinator__default }}"
 
-# Default raft directory
-influxdb_raft_dir: /opt/influxdb/shared/data/raft
 
-# Raft debugging is disabled by default
-influxdb_raft_debug: 'false'
+# Default values of options for the section
+influxdb_config_retention__default_enabled: "true"
+influxdb_config_retention__default_check_interval: 30m
 
-# Default raft election timeout
-influxdb_raft_election_timeout: 1s
+# Default options of the retention section
+influxdb_config_retention__default:
+    enabled: "{{ influxdb_config_retention__default_enabled }}"
+    check-interval: "{{ influxdb_config_retention__default_check_interval }}"
 
-# Default list of seed servers
-influxdb_cluster_seed_servers: []
+# Custom options of the retention section
+influxdb_config_retention__custom: {}
 
-# Default cluster prtobuf port number
-influxdb_cluster_protobuf_port: 8099
+# Final data the retention section
+influxdb_config_retention: "{{
+  influxdb_config_retention__default.update(influxdb_config_retention__custom) }}{{
+  influxdb_config_retention__default }}"
 
-# Default cluster protobuf timeout
-influxdb_cluster_protobuf_timeout: 2s
 
-# Default cluster protobuf heartbeat time
-influxdb_cluster_protobuf_heartbeat: 200ms
+# Default values of options for the section
+influxdb_config_shard__default_enabled: "true"
+influxdb_config_shard__default_check_interval: 10m
+influxdb_config_shard__default_advance_period: 30m
 
-# Default cluster protobug min backoff time
-influxdb_cluster_protobuf_min_backoff: 1s
+# Default options of the shard-precreation: section
+influxdb_config_shard__default:
+  enabled: "{{ influxdb_config_shard__default_enabled }}"
+  check-interval: "{{ influxdb_config_shard__default_check_interval }}"
+  advance-period: "{{ influxdb_config_shard__default_advance_period }}"
 
-# Default cluster protobuf max backoff time
-influxdb_cluster_protobuf_max_backoff: 10s
+# Custom options of the shard-precreation: section
+influxdb_config_shard__custom: {}
 
-# Default cluster write buffer size
-influxdb_cluster_write_buffer_size: 1000
+# Final data the shard-precreation: section
+influxdb_config_shard: "{{
+  influxdb_config_shard__default.update(influxdb_config_shard__custom) }}{{
+  influxdb_config_shard__default }}"
 
-# Default cluster response buffer size
-influxdb_cluster_max_response_buffer_size: 100
 
-# Default cluster concurrent shard query limit
-influxdb_cluster_concurrent_shard_query_limit: 10
+# Default values of options for the section
+influxdb_config_monitor__default_store_enabled: "true"
+influxdb_config_monitor__default_store_database: _internal
+influxdb_config_monitor__default_store_interval: 10s
 
-# Default storage directory
-influxdb_storage_dir: /opt/influxdb/shared/data/db
+# Default options of the monitor section
+influxdb_config_monitor__default:
+  store-enabled: "{{ influxdb_config_monitor__default_store_enabled }}"
+  store-database: "{{ influxdb_config_monitor__default_store_database }}"
+  store-interval: "{{ influxdb_config_monitor__default_store_interval }}"
 
-# Default storage write buffer size
-influxdb_storage_write_buffer_size: 10000
+# Custom options of the monitor section
+influxdb_config_monitor__custom: {}
 
-# Default storage engine
-influxdb_storage_default_engine: rocksdb
+# Final data the monitor section
+influxdb_config_monitor: "{{
+  influxdb_config_monitor__default.update(influxdb_config_monitor__custom) }}{{
+  influxdb_config_monitor__default }}"
 
-# Defaumt max bunber of open shards
-influxdb_storage_max_open_shards: 0
 
-# Default storage point batch size
-influxdb_storage_point_batch_size: 100
+# Default values of options for the http section
+influxdb_config_http__default_enabled: "true"
+influxdb_config_http__default_bind_address: :8086
+influxdb_config_http__default_auth_enabled: "false"
+influxdb_config_http__default_realm: InfluxDB
+influxdb_config_http__default_log_enabled: "false"
+influxdb_config_http__default_write_tracing: "false"
+influxdb_config_http__default_pprof_enabled: "false"
+influxdb_config_http__default_https_enabled: "false"
+influxdb_config_http__default_https_certificate: /etc/ssl/influxdb.pem
+influxdb_config_http__default_https_private_key: ""
+influxdb_config_http__default_shared_secret: ""
+influxdb_config_http__default_max_row_limit: 0
+influxdb_config_http__default_max_connection_limit: 0
+influxdb_config_http__default_unix_socket_enabled: "false"
+influxdb_config_http__default_bind_socket: /var/run/influxdb.sock
 
-# Default storage write batch size
-influxdb_storage_write_batch_size: 5000000
+# Default options of the http section
+influxdb_config_http__default:
+  enabled: "{{ influxdb_config_http__default_enabled }}"
+  bind-address: "{{ influxdb_config_http__default_bind_address }}"
+  auth-enabled: "{{ influxdb_config_http__default_auth_enabled }}"
+  realm: "{{ influxdb_config_http__default_realm }}"
+  log-enabled: "{{ influxdb_config_http__default_log_enabled }}"
+  write-tracing: "{{ influxdb_config_http__default_write_tracing }}"
+  pprof-enabled: "{{ influxdb_config_http__default_pprof_enabled }}"
+  https-enabled: "{{ influxdb_config_http__default_https_enabled }}"
+  https-certificate: "{{ influxdb_config_http__default_https_certificate }}"
+  https-private-key: "{{ influxdb_config_http__default_https_private_key }}"
+  shared-secret: "{{ influxdb_config_http__default_shared_secret }}"
+  max-row-limit: "{{ influxdb_config_http__default_max_row_limit }}"
+  max-connection-limit: "{{ influxdb_config_http__default_max_connection_limit }}"
+  unix-socket-enabled: "{{ influxdb_config_http__default_unix_socket_enabled }}"
+  bind-socket: "{{ influxdb_config_http__default_bind_socket }}"
 
-# Default storage retention swwp period
-influxdb_storage_retention_sweep_period: 10m
+# Custom options of the http section
+influxdb_config_http__custom: {}
 
-# Default max number of open files for LevelDB storage engine
-influxdb_storage_engines_leveldb_max_open_files: 1000
+# Final data the http section
+influxdb_config_http: "{{
+  influxdb_config_http__default.update(influxdb_config_http__custom) }}{{
+  influxdb_config_http__default }}"
 
-# Default LRU cache size for LevelDB storage engine
-influxdb_storage_engines_leveldb_lru_cache_size: 200m
 
-# Default max number of open files for RocksDB storage engine
-influxdb_storage_engines_rocksdb_max_open_files: 1000
+# Default values of options for the subscriber section
+influxdb_config_subscriber__default_enabled: "true"
+influxdb_config_subscriber__default_influxdb_config_subscriber__default_enabled: "true"
+influxdb_config_subscriber__default_http_timeout: 30s
+influxdb_config_subscriber__default_insecure_skip_verify: "false"
+influxdb_config_subscriber__default_ca_certs: ""
+influxdb_config_subscriber__default_write_concurrency: 40
+influxdb_config_subscriber__default_write_buffer_size: 1000
 
-# Default LRU cache size for RocksDB storage engine
-influxdb_storage_engines_rocksdb_lru_cache_size: 200m
+# Default options of the subscriber section
+influxdb_config_subscriber__default:
+  enabled: "{{ influxdb_config_subscriber__default_enabled }}"
+  http-timeout: "{{ influxdb_config_subscriber__default_http_timeout }}"
+  insecure-skip-verify: "{{ influxdb_config_subscriber__default_insecure_skip_verify }}"
+  ca-certs: "{{ influxdb_config_subscriber__default_ca_certs }}"
+  write-concurrency: "{{ influxdb_config_subscriber__default_write_concurrency }}"
+  write-buffer-size: "{{ influxdb_config_subscriber__default_write_buffer_size }}"
 
-# Default max number of open files for HyperLevelDB storage engine
-influxdb_storage_engines_hyperleveldb_max_open_files: 1000
+# Custom options of the subscriber section
+influxdb_config_subscriber__custom: {}
 
-# Default LRU cache size for HyperLevelDB storage engine
-influxdb_storage_engines_hyperleveldb_lru_cache_size: 200m
+# Final data the subscriber section
+influxdb_config_subscriber: "{{
+  influxdb_config_subscriber__default.update(influxdb_config_subscriber__custom) }}{{
+  influxdb_config_subscriber__default }}"
 
-# Default map size for LMDB storage engine
-influxdb_storage_engines_lmdb_map_size: 100g
 
-# Default wal directory
-influxdb_wal_dir: /opt/influxdb/shared/data/wal
+# Default option values of the default list item of the graphite section
+influxdb_config_graphite_list__default_enabled: "false"
+influxdb_config_graphite_list__default_database: graphite
+influxdb_config_graphite_list__default_retention_policy: ""
+influxdb_config_graphite_list__default_bind_address: :2003
+influxdb_config_graphite_list__default_protocol: tcp
+influxdb_config_graphite_list__default_consistency_level: one
+influxdb_config_graphite_list__default_batch_size: 5000
+influxdb_config_graphite_list__default_batch_pending: 10
+influxdb_config_graphite_list__default_batch_timeout: 1s
+influxdb_config_graphite_list__default_udp_read_buffer: 0
+influxdb_config_graphite_list__default_separator: .
+influxdb_config_graphite_list__default_tags: []
+influxdb_config_graphite_list__default_templates: []
 
-# Default flush after time
-influxdb_wal_flush_after: 1000
+# Default options of the default list item of the graphite section
+influxdb_config_graphite_list__default:
+  enabled: "{{ influxdb_config_graphite_list__default_enabled }}"
+  database: "{{ influxdb_config_graphite_list__default_database }}"
+  retention-policy: "{{ influxdb_config_graphite_list__default_retention_policy }}"
+  bind-address: "{{ influxdb_config_graphite_list__default_bind_address }}"
+  protocol: "{{ influxdb_config_graphite_list__default_protocol }}"
+  consistency-level: "{{ influxdb_config_graphite_list__default_consistency_level }}"
+  batch-size: "{{ influxdb_config_graphite_list__default_batch_size }}"
+  batch-pending: "{{ influxdb_config_graphite_list__default_batch_pending }}"
+  batch-timeout: "{{ influxdb_config_graphite_list__default_batch_timeout }}"
+  udp-read-buffer: "{{ influxdb_config_graphite_list__default_udp_read_buffer }}"
+  separator: "{{ influxdb_config_graphite_list__default_separator }}"
+  tags: "{{ influxdb_config_graphite_list__default_tags }}"
+  templates: "{{ influxdb_config_graphite_list__default_templates }}"
 
-# Default wal bookmark after time
-influxdb_wal_bookmark_after: 1000
+# Custom options of the default list item of the graphite section
+influxdb_config_graphite_list__custom: {}
 
-# Default wal index after time
-influxdb_wal_index_after: 1000
+# Default list item of the graphite section
+influxdb_config_graphite__default:
+ - "{{ influxdb_config_graphite_list__default.update(influxdb_config_graphite_list__custom) }}{{
+       influxdb_config_graphite_list__default }}"
 
-# Default wal request per logfile time
-influxdb_wal_requests_per_logfile: 10000
+# Custom list items of the graphite section
+influxdb_config_graphite__custom: []
+
+# Final data the graphite section
+influxdb_config_graphite: "{{
+  influxdb_config_graphite__default +
+  influxdb_config_graphite__custom
+}}"
+
+
+# Default option values of the default list item of the collectd section
+influxdb_config_collectd_list__default_enabled: "false"
+influxdb_config_collectd_list__default_bind_address: :25826
+influxdb_config_collectd_list__default_database: collectd
+influxdb_config_collectd_list__default_retention_policy: ""
+influxdb_config_collectd_list__default_typesdb: /usr/local/share/collectd
+influxdb_config_collectd_list__default_security_level: "none"
+influxdb_config_collectd_list__default_auth_file: /etc/collectd/auth_file
+influxdb_config_collectd_list__default_batch_size: 5000
+influxdb_config_collectd_list__default_batch_pending: 10
+influxdb_config_collectd_list__default_batch_timeout: 10s
+influxdb_config_collectd_list__default_read_buffer: 0
+
+# Default options of the default list item of the graphite section
+influxdb_config_collectd_list__default:
+  enabled: "{{ influxdb_config_collectd_list__default_enabled }}"
+  bind-address: "{{ influxdb_config_collectd_list__default_bind_address }}"
+  database: "{{ influxdb_config_collectd_list__default_database }}"
+  retention-policy: "{{ influxdb_config_collectd_list__default_retention_policy }}"
+  typesdb: "{{ influxdb_config_collectd_list__default_typesdb }}"
+  security-level: "{{ influxdb_config_collectd_list__default_security_level }}"
+  auth-file: "{{ influxdb_config_collectd_list__default_auth_file }}"
+  batch-size: "{{ influxdb_config_collectd_list__default_batch_size }}"
+  batch-pending: "{{ influxdb_config_collectd_list__default_batch_pending }}"
+  batch-timeout: "{{ influxdb_config_collectd_list__default_batch_timeout }}"
+  read-buffer: "{{ influxdb_config_collectd_list__default_read_buffer }}"
+
+# Custom options of the default list item of the collectd section
+influxdb_config_collectd_list__custom: {}
+
+# Default list item of the collectd section
+influxdb_config_collectd__default:
+ - "{{ influxdb_config_collectd_list__default.update(influxdb_config_collectd_list__custom) }}{{
+       influxdb_config_collectd_list__default }}"
+
+# Custom list items of the collectd section
+influxdb_config_collectd__custom: []
+
+# Final data the collectd section
+influxdb_config_collectd: "{{
+  influxdb_config_collectd__default +
+  influxdb_config_collectd__custom
+}}"
+
+
+# Default option values of the default list item of the opentsdb section
+influxdb_config_opentsdb_list__default_enabled: "false"
+influxdb_config_opentsdb_list__default_bind_address: :4242
+influxdb_config_opentsdb_list__default_database: opentsdb
+influxdb_config_opentsdb_list__default_retention_policy: ""
+influxdb_config_opentsdb_list__default_consistency_level: one
+influxdb_config_opentsdb_list__default_tls_enabled: "false"
+influxdb_config_opentsdb_list__default_certificate: /etc/ssl/influxdb.pem
+influxdb_config_opentsdb_list__default_log_point_errors: "true"
+influxdb_config_opentsdb_list__default_batch_size: 1000
+influxdb_config_opentsdb_list__default_batch_pending: 5
+influxdb_config_opentsdb_list__default_batch_timeout: 1s
+
+# Default options of the default list item of the graphite section
+influxdb_config_opentsdb_list__default:
+  enabled: "{{ influxdb_config_opentsdb_list__default_enabled }}"
+  bind-address: "{{ influxdb_config_opentsdb_list__default_bind_address }}"
+  database: "{{ influxdb_config_opentsdb_list__default_database }}"
+  retention-policy: "{{ influxdb_config_opentsdb_list__default_retention_policy }}"
+  consistency-level: "{{ influxdb_config_opentsdb_list__default_consistency_level }}"
+  tls-enabled: "{{ influxdb_config_opentsdb_list__default_tls_enabled }}"
+  certificate: "{{ influxdb_config_opentsdb_list__default_certificate }}"
+  log-point-errors: "{{ influxdb_config_opentsdb_list__default_log_point_errors }}"
+  batch-size: "{{ influxdb_config_opentsdb_list__default_batch_size }}"
+  batch-pending: "{{ influxdb_config_opentsdb_list__default_batch_pending }}"
+  batch-timeout: "{{ influxdb_config_opentsdb_list__default_batch_timeout }}"
+
+# Custom options of the default list item of the opentsdb section
+influxdb_config_opentsdb_list__custom: {}
+
+# Default list item of the opentsdb section
+influxdb_config_opentsdb__default:
+ - "{{ influxdb_config_opentsdb_list__default.update(influxdb_config_opentsdb_list__custom) }}{{
+       influxdb_config_opentsdb_list__default }}"
+
+# Custom list items of the opentsdb section
+influxdb_config_opentsdb__custom: []
+
+# Final data the opentsdb section
+influxdb_config_opentsdb: "{{
+  influxdb_config_opentsdb__default +
+  influxdb_config_opentsdb__custom
+}}"
+
+
+# Default values of options for the udp section
+influxdb_config_udp_list__default_enabled: "false"
+influxdb_config_udp_list__default_bind_address: :8089
+influxdb_config_udp_list__default_database: udp
+influxdb_config_udp_list__default_retention_policy: ""
+influxdb_config_udp_list__default_batch_size: 5000
+influxdb_config_udp_list__default_batch_pending: 10
+influxdb_config_udp_list__default_batch_timeout: 1s
+influxdb_config_udp_list__default_read_buffer: 0
+
+# Default options of the udp section
+influxdb_config_udp_list__default:
+  enabled: "{{ influxdb_config_udp_list__default_enabled }}"
+  bind-address: "{{ influxdb_config_udp_list__default_bind_address }}"
+  database: "{{ influxdb_config_udp_list__default_database }}"
+  retention-policy: "{{ influxdb_config_udp_list__default_retention_policy }}"
+  batch-size: "{{ influxdb_config_udp_list__default_batch_size }}"
+  batch-pending: "{{ influxdb_config_udp_list__default_batch_pending }}"
+  batch-timeout: "{{ influxdb_config_udp_list__default_batch_timeout }}"
+  read-buffer: "{{ influxdb_config_udp_list__default_read_buffer }}"
+
+# Custom options of the udp section
+influxdb_config_udp_list__custom: {}
+
+# Default item of the udp section list
+influxdb_config_udp__default:
+ - "{{ influxdb_config_udp_list__default.update(influxdb_config_udp_list__custom) }}{{
+       influxdb_config_udp_list__default }}"
+
+# Custom item of the udp section list
+influxdb_config_udp__custom: []
+
+# Final data the udp section
+influxdb_config_udp: "{{
+  influxdb_config_udp__default +
+  influxdb_config_udp__custom
+}}"
+
+
+# Default values of options for the continuous-queries section
+influxdb_config_continuous__default_log_enabled: "true"
+influxdb_config_continuous__default_enabled: "true"
+influxdb_config_continuous__default_run_interval: 1s
+
+# Default options of the continuous-queries section
+influxdb_config_continuous__default:
+  log-enabled: "{{ influxdb_config_continuous__default_log_enabled }}"
+  enabled: "{{ influxdb_config_continuous__default_enabled }}"
+  run-interval: "{{ influxdb_config_continuous__default_run_interval }}"
+
+# Custom options of the continuous-queries section
+influxdb_config_continuous__custom: {}
+
+# Final data the continuous-queries section
+influxdb_config_continuous: "{{
+  influxdb_config_continuous__default.update(influxdb_config_continuous__custom) }}{{
+  influxdb_config_continuous__default }}"
+
+
+# Default values of options for the root section
+influxdb_config_reporting_disabled: "false"
+influxdb_config_bind_host: 127.0.0.1
+influxdb_config_bind_port: 8088
+influxdb_config_bind_address: "{{ influxdb_config_bind_host }}:{{ influxdb_config_bind_port }}"
+
+# Default configuration template
+influxdb_config:
+  reporting-disabled: "{{ influxdb_config_reporting_disabled }}"
+  bind-address: "{{ influxdb_config_bind_address }}"
+  meta: "{{ influxdb_config_meta }}"
+  data: "{{ influxdb_config_data }}"
+  coordinator: "{{ influxdb_config_coordinator }}"
+  retention: "{{ influxdb_config_retention }}"
+  shard-precreation: "{{ influxdb_config_shard }}"
+  monitor: "{{ influxdb_config_monitor }}"
+  http: "{{ influxdb_config_http }}"
+  subscriber: "{{ influxdb_config_subscriber }}"
+  graphite: "{{ influxdb_config_graphite }}"
+  collectd: "{{ influxdb_config_collectd }}"
+  opentsdb: "{{ influxdb_config_opentsdb }}"
+  udp: "{{ influxdb_config_udp }}"
+  continuous_queries: "{{ influxdb_config_continuous }}"
 ```
 
 
 Dependencies
 ------------
 
-* [Config Encoder Macros](https://github.com/picotrading/config-encoder-macros)
+- [`config_encoder_filters`](https://github.com/jtyr/ansible-config_encoder_filters)
 
 
 License
