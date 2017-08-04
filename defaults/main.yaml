@@ -21,8 +21,8 @@ influxdb_service: influxdb
 
 # Default values of options for the meta section
 influxdb_config_meta__default_dir: /var/lib/influxdb/meta
-influxdb_config_meta__default_retention_autocreate: "true"
-influxdb_config_meta__default_logging_enabled: "true"
+influxdb_config_meta__default_retention_autocreate: yes
+influxdb_config_meta__default_logging_enabled: yes
 
 # Default options of the meta section
 influxdb_config_meta__default:
@@ -44,8 +44,8 @@ influxdb_config_data__default_dir: /var/lib/influxdb/data
 influxdb_config_data__default_wal_dir: /var/lib/influxdb/wal
 influxdb_config_data__default_wal_fsync_delay: 0s
 influxdb_config_data__default_index_version: inmem
-influxdb_config_data__default_trace_logging_enabled: "false"
-influxdb_config_data__default_query_log_enabled: "false"
+influxdb_config_data__default_trace_logging_enabled: no
+influxdb_config_data__default_query_log_enabled: no
 influxdb_config_data__default_cache_max_memory_size: 1048576000
 influxdb_config_data__default_cache_snapshot_memory_size: 26214400
 influxdb_config_data__default_cache_snapshot_write_cold_duration: 10m
@@ -108,7 +108,7 @@ influxdb_config_coordinator: "{{
 
 
 # Default values of options for the section
-influxdb_config_retention__default_enabled: "true"
+influxdb_config_retention__default_enabled: yes
 influxdb_config_retention__default_check_interval: 30m
 
 # Default options of the retention section
@@ -126,7 +126,7 @@ influxdb_config_retention: "{{
 
 
 # Default values of options for the section
-influxdb_config_shard__default_enabled: "true"
+influxdb_config_shard__default_enabled: yes
 influxdb_config_shard__default_check_interval: 10m
 influxdb_config_shard__default_advance_period: 30m
 
@@ -146,7 +146,7 @@ influxdb_config_shard: "{{
 
 
 # Default values of options for the section
-influxdb_config_monitor__default_store_enabled: "true"
+influxdb_config_monitor__default_store_enabled: yes
 influxdb_config_monitor__default_store_database: _internal
 influxdb_config_monitor__default_store_interval: 10s
 
@@ -166,20 +166,20 @@ influxdb_config_monitor: "{{
 
 
 # Default values of options for the http section
-influxdb_config_http__default_enabled: "true"
+influxdb_config_http__default_enabled: yes
 influxdb_config_http__default_bind_address: :8086
-influxdb_config_http__default_auth_enabled: "false"
+influxdb_config_http__default_auth_enabled: no
 influxdb_config_http__default_realm: InfluxDB
-influxdb_config_http__default_log_enabled: "false"
-influxdb_config_http__default_write_tracing: "false"
-influxdb_config_http__default_pprof_enabled: "false"
-influxdb_config_http__default_https_enabled: "false"
+influxdb_config_http__default_log_enabled: no
+influxdb_config_http__default_write_tracing: no
+influxdb_config_http__default_pprof_enabled: no
+influxdb_config_http__default_https_enabled: no
 influxdb_config_http__default_https_certificate: /etc/ssl/influxdb.pem
 influxdb_config_http__default_https_private_key: ""
 influxdb_config_http__default_shared_secret: ""
 influxdb_config_http__default_max_row_limit: 0
 influxdb_config_http__default_max_connection_limit: 0
-influxdb_config_http__default_unix_socket_enabled: "false"
+influxdb_config_http__default_unix_socket_enabled: no
 influxdb_config_http__default_bind_socket: /var/run/influxdb.sock
 
 # Default options of the http section
@@ -210,10 +210,10 @@ influxdb_config_http: "{{
 
 
 # Default values of options for the subscriber section
-influxdb_config_subscriber__default_enabled: "true"
-influxdb_config_subscriber__default_influxdb_config_subscriber__default_enabled: "true"
+influxdb_config_subscriber__default_enabled: yes
+influxdb_config_subscriber__default_influxdb_config_subscriber__default_enabled: yes
 influxdb_config_subscriber__default_http_timeout: 30s
-influxdb_config_subscriber__default_insecure_skip_verify: "false"
+influxdb_config_subscriber__default_insecure_skip_verify: no
 influxdb_config_subscriber__default_ca_certs: ""
 influxdb_config_subscriber__default_write_concurrency: 40
 influxdb_config_subscriber__default_write_buffer_size: 1000
@@ -237,7 +237,7 @@ influxdb_config_subscriber: "{{
 
 
 # Default option values of the default list item of the graphite section
-influxdb_config_graphite_list__default_enabled: "false"
+influxdb_config_graphite_list__default_enabled: no
 influxdb_config_graphite_list__default_database: graphite
 influxdb_config_graphite_list__default_retention_policy: ""
 influxdb_config_graphite_list__default_bind_address: :2003
@@ -286,7 +286,7 @@ influxdb_config_graphite: "{{
 
 
 # Default option values of the default list item of the collectd section
-influxdb_config_collectd_list__default_enabled: "false"
+influxdb_config_collectd_list__default_enabled: no
 influxdb_config_collectd_list__default_bind_address: :25826
 influxdb_config_collectd_list__default_database: collectd
 influxdb_config_collectd_list__default_retention_policy: ""
@@ -331,14 +331,14 @@ influxdb_config_collectd: "{{
 
 
 # Default option values of the default list item of the opentsdb section
-influxdb_config_opentsdb_list__default_enabled: "false"
+influxdb_config_opentsdb_list__default_enabled: no
 influxdb_config_opentsdb_list__default_bind_address: :4242
 influxdb_config_opentsdb_list__default_database: opentsdb
 influxdb_config_opentsdb_list__default_retention_policy: ""
 influxdb_config_opentsdb_list__default_consistency_level: one
-influxdb_config_opentsdb_list__default_tls_enabled: "false"
+influxdb_config_opentsdb_list__default_tls_enabled: no
 influxdb_config_opentsdb_list__default_certificate: /etc/ssl/influxdb.pem
-influxdb_config_opentsdb_list__default_log_point_errors: "true"
+influxdb_config_opentsdb_list__default_log_point_errors: yes
 influxdb_config_opentsdb_list__default_batch_size: 1000
 influxdb_config_opentsdb_list__default_batch_pending: 5
 influxdb_config_opentsdb_list__default_batch_timeout: 1s
@@ -376,7 +376,7 @@ influxdb_config_opentsdb: "{{
 
 
 # Default values of options for the udp section
-influxdb_config_udp_list__default_enabled: "false"
+influxdb_config_udp_list__default_enabled: no
 influxdb_config_udp_list__default_bind_address: :8089
 influxdb_config_udp_list__default_database: udp
 influxdb_config_udp_list__default_retention_policy: ""
@@ -415,8 +415,8 @@ influxdb_config_udp: "{{
 
 
 # Default values of options for the continuous-queries section
-influxdb_config_continuous__default_log_enabled: "true"
-influxdb_config_continuous__default_enabled: "true"
+influxdb_config_continuous__default_log_enabled: yes
+influxdb_config_continuous__default_enabled: yes
 influxdb_config_continuous__default_run_interval: 1s
 
 # Default options of the continuous-queries section
@@ -435,7 +435,7 @@ influxdb_config_continuous: "{{
 
 
 # Default values of options for the root section
-influxdb_config_reporting_disabled: "false"
+influxdb_config_reporting_disabled: no
 influxdb_config_bind_host: 127.0.0.1
 influxdb_config_bind_port: 8088
 influxdb_config_bind_address: "{{ influxdb_config_bind_host }}:{{ influxdb_config_bind_port }}"
